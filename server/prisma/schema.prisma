@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("user")
+  purse     Float    @default(100)
+  leagueId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  league             League?              @relation(fields: [leagueId], references: [id])
+  auctionBids        AuctionBid[]
+  userPlayers        UserPlayer[]
+  perMatchSelections PerMatchSelection[]
+  auctionMatchPoints AuctionMatchPoints[]
+  perMatchPoints     PerMatchPoints[]
+  seasonLeaderboard  SeasonLeaderboard[]
+  pointsLogs         PointsLog[]
+}
+
+model League {
+  id         String   @id @default(uuid())
+  name       String
+  inviteCode String   @unique
+  adminId    String
+  createdAt  DateTime @default(now())
+
+  users             User[]
+  matches           Match[]
+  auctionSessions   AuctionSession[]
+  seasonLeaderboard SeasonLeaderboard[]
+}
+
+model Player {
+  id           String   @id @default(uuid())
+  externalId   String   @unique
+  name         String
+  iplTeam      String
+  role         String
+  tier         String
+  basePrice    Float
+  imageUrl     String?
+  seasonPoints Float    @default(0)
+  matchesPlayed Int     @default(0)
+  lastSyncedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  userPlayers       UserPlayer[]
+  auctionBids       AuctionBid[]
+  playerMatchStats  PlayerMatchStats[]
+  pointsLogs        PointsLog[]
+}
+
+model AuctionSession {
+  id              String   @id @default(uuid())
+  leagueId        String
+  status          String   @default("pending")
+  currentPlayerId String?
+  currentBidAmount Float?
+  currentBidderId String?
+  timerEndsAt     DateTime?
+  nominationQueue String   @default("[]")
+  soldPlayers     String   @default("[]")
+  unsoldPlayers   String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  league      League       @relation(fields: [leagueId], references: [id])
+  auctionBids AuctionBid[]
+}
+
+model AuctionBid {
+  id        String   @id @default(uuid())
+  sessionId String
+  playerId  String
+  userId    String
+  amount    Float
+  timestamp DateTime @default(now())
+
+  session AuctionSession @relation(fields: [sessionId], references: [id])
+  player  Player         @relation(fields: [playerId], references: [id])
+  user    User           @relation(fields: [userId], references: [id])
+}
+
+model UserPlayer {
+  id            String @id @default(uuid())
+  userId        String
+  playerId      String
+  purchasePrice Float
+
+  user   User   @relation(fields: [userId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([userId, playerId])
+}
+
+model Match {
+  id                String   @id @default(uuid())
+  externalId        String   @unique
+  team1             String
+  team2             String
+  team1Logo         String?
+  team2Logo         String?
+  venue             String?
+  startTime         DateTime
+  selectionDeadline DateTime
+  status            String   @default("upcoming")
+  leagueId          String
+  matchNumber       Int?
+  result            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  league             League              @relation(fields: [leagueId], references: [id])
+  perMatchSelections PerMatchSelection[]
+  playerMatchStats   PlayerMatchStats[]
+  auctionMatchPoints AuctionMatchPoints[]
+  perMatchPoints     PerMatchPoints[]
+  pointsLogs         PointsLog[]
+}
+
+model PerMatchSelection {
+  id              String  @id @default(uuid())
+  userId          String
+  matchId         String
+  selectedPlayers String  @default("[]")
+  captainId       String
+  vcId            String
+  isAutoSelected  Boolean @default(false)
+  createdAt       DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@unique([userId, matchId])
+}
+
+model PlayerMatchStats {
+  id          String  @id @default(uuid())
+  playerId    String
+  matchId     String
+  runs        Int     @default(0)
+  ballsFaced  Int     @default(0)
+  fours       Int     @default(0)
+  sixes       Int     @default(0)
+  overs       Float   @default(0)
+  runsConceded Int    @default(0)
+  wickets     Int     @default(0)
+  maidens     Int     @default(0)
+  catches     Int     @default(0)
+  stumpings   Int     @default(0)
+  runOuts     Float   @default(0)
+  isPlayingXI Boolean @default(false)
+  dismissalType String?
+  bowlingDismissalTypes String @default("[]")
+  source      String  @default("mock")
+  isFinal     Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id])
+  match  Match  @relation(fields: [matchId], references: [id])
+
+  @@unique([playerId, matchId])
+}
+
+model AuctionMatchPoints {
+  id          String  @id @default(uuid())
+  userId      String
+  matchId     String
+  totalPoints Float   @default(0)
+  breakdown   String  @default("[]")
+  isInterim   Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@unique([userId, matchId])
+}
+
+model PerMatchPoints {
+  id          String  @id @default(uuid())
+  userId      String
+  matchId     String
+  totalPoints Float   @default(0)
+  breakdown   String  @default("[]")
+  isInterim   Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@unique([userId, matchId])
+}
+
+model SeasonLeaderboard {
+  id            String @id @default(uuid())
+  userId        String
+  leagueId      String
+  contestType   String
+  totalPoints   Float  @default(0)
+  matchesPlayed Int    @default(0)
+  matchWins     Int    @default(0)
+  bestScore     Float  @default(0)
+  updatedAt     DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  league League @relation(fields: [leagueId], references: [id])
+
+  @@unique([userId, leagueId, contestType])
+}
+
+model CronLog {
+  id      String   @id @default(uuid())
+  jobName String
+  lastRun DateTime @default(now())
+  status  String
+  message String?
+  duration Int?
+}
+
+model PointsLog {
+  id          String   @id @default(uuid())
+  userId      String
+  matchId     String
+  playerId    String
+  contestType String
+  breakdown   String   @default("{}")
+  calculatedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  match  Match  @relation(fields: [matchId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+}
+
+model ApiUsage {
+  id        String   @id @default(uuid())
+  date      String   @unique
+  cricapiCalls   Int  @default(0)
+  fallbackCalls  Int  @default(0)
+  puppeteerCalls Int  @default(0)
+  lastWarned     DateTime?
+}

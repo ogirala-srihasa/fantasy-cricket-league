@@ -1,0 +1,21 @@
+{
+  "name": "fantasy-cricket-league",
+  "version": "1.0.0",
+  "description": "Fantasy Cricket League with Auction Tournament & Per-match Contest",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && node index.js",
+    "db:migrate": "cd server && npx prisma migrate dev",
+    "db:seed": "cd server && npx prisma db seed",
+    "db:studio": "cd server && npx prisma studio",
+    "setup": "npm install && cd server && npm install && npx prisma generate && npx prisma migrate dev --name init && npx prisma db seed && cd ../client && npm install",
+    "postinstall": "cd server && npm install && cd ../client && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
