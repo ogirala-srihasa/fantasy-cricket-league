@@ -5,7 +5,7 @@ builder = "NIXPACKS"
 aptPkgs = ["chromium", "libgbm1", "libnss3", "libatk-bridge2.0-0", "libdrm2", "libxkbcommon0", "libxcomposite1", "libxdamage1", "libxrandr2", "libglib2.0-0", "libasound2"]
 
 [deploy]
-startCommand = "cd server && npx prisma migrate deploy && cd .. && npm run start"
+startCommand = "cd server && npx prisma generate && npx prisma db push --accept-data-loss && node prisma/seed.js && cd .. && npm run start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 
