@@ -171,8 +171,11 @@ class CricketDataService {
     const data = await this._cascadingRequest('/matches', { offset: 0 });
     if (!data?.data) return [];
     
+    // If Admin explicitly set a Series ID, strictly lock onto it. Otherwise fallback to generic 'IPL' matching (which might catch 2024 on free APIs)
+    const targetSeriesId = process.env.IPL_SERIES_ID;
+    
     return data.data
-      .filter(m => m.series_id && (m.name || '').toLowerCase().includes('ipl'))
+      .filter(m => targetSeriesId ? m.series_id === targetSeriesId : (m.series_id && (m.name || '').toLowerCase().includes('ipl') && !m.name.includes('2024')))
       .map(m => ({
         externalId: m.id,
         team1: m.teams?.[0] || m.teamInfo?.[0]?.shortname || 'TBD',
